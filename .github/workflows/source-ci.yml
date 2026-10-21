@@ -55,11 +55,11 @@ jobs:
           path: .local/ci-release-policy
           persist-credentials: false
           submodules: false
-      - name: Verify packaged solution identity and managed mode
+      - name: Verify packaged solution identity, version, publisher and components
         shell: bash
         run: |
           python - <<'PYCODE'
-          import xml.etree.ElementTree as ET, zipfile
+          import re, uuid, xml.etree.ElementTree as ET, zipfile
           from pathlib import Path
           source = ET.fromstring(Path('powerplatform/solution_bootstrap/src/Other/Solution.xml').read_bytes())
           with zipfile.ZipFile('powerplatform/dist/source-ci/WorkforceCosting-managed.zip') as archive:
@@ -67,8 +67,25 @@ jobs:
               packaged = ET.fromstring(archive.read('solution.xml'))
           identity = source.findtext('.//SolutionManifest/UniqueName')
           assert identity and packaged.findtext('.//SolutionManifest/UniqueName') == identity
+          version = source.findtext('.//SolutionManifest/Version')
+          assert re.fullmatch(r'[0-9]+(?:\.[0-9]+){3}', version or '')
+          assert packaged.findtext('.//SolutionManifest/Version') == version
+          for field in ['UniqueName', 'CustomizationPrefix']:
+              value = source.findtext('.//SolutionManifest/Publisher/' + field)
+              assert value and packaged.findtext('.//SolutionManifest/Publisher/' + field) == value
+          def component_keys(document):
+              keys = []
+              for component in document.findall('.//RootComponents/RootComponent'):
+                  identity = component.get('schemaName') or component.get('id')
+                  assert component.get('type') and identity
+                  if not component.get('schemaName'):
+                      identity = str(uuid.UUID(identity))
+                  keys.append((component.get('type'), identity))
+              assert keys and len(keys) == len(set(keys))
+              return set(keys)
+          assert component_keys(source) == component_keys(packaged)
           assert packaged.findtext('.//SolutionManifest/Managed') == '1'
-          print('Packaged solution identity matches canonical source; managed mode verified.')
+          print('Canonical identity/version/publisher/component set preserved; managed mode verified.')
           PYCODE
       - name: Inventory the actual managed solution archive
         shell: bash
