@@ -25,3 +25,15 @@ prerequisites separately from source CI; this profile configures no tenant.
 SharePoint structured document generation remains the preferred route for any
 selected structured report or document, subject to exact entitlement, complete
 output, human-edit preservation and recovery qualification.
+
+## Locked solution SDK build
+
+The bootstrap project pins Microsoft.PowerApps.MSBuild.Solution 2.14.1 and
+.NET Framework reference assemblies 1.0.3 with a committed NuGet content-hash lock.
+On Windows, run `dotnet restore powerplatform/solution_bootstrap/bootstrap_solution.cdsproj --locked-mode`,
+then `dotnet build powerplatform/solution_bootstrap/bootstrap_solution.cdsproj --no-restore -c Release -p:SolutionPackageType=Managed`.
+Source CI compares every SDK archive member against the existing pinned PAC
+package, allowing only XML formatting, top-level entity collection order and ZIP container
+metadata differences. Entity identities and all nested content/order remain checked.
+The SDK candidate is retained separately; the existing PAC package remains the
+attested release path. Neither build authenticates to or deploys into a tenant.
