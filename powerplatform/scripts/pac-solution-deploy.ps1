@@ -1,10 +1,11 @@
-﻿# PAC CLI Solution Deploy Script
+# PAC CLI Solution Deploy Script
 # Deploys Power Platform solution to target environment
 
 param(
     [string]$SolutionPath = ".\dist\WorkforceCosting-unmanaged.zip",
     [string]$EnvironmentName = "Development",
     [string]$EnvironmentUrl = "",
+    [string]$PacPath = "",
     [string]$TenantId = "",
     [string]$ApplicationId = "",
     [string]$ClientSecret = "",
@@ -18,12 +19,13 @@ param(
 $ErrorActionPreference = "Stop"
 
 function Get-PacCliCommand {
-    $directPac = Join-Path $HOME ".nuget\packages\microsoft.powerapps.cli\2.3.2\tools\pac.exe"
-    if (Test-Path $directPac) {
-        return $directPac
+    if ($PacPath) {
+        if (-not (Test-Path -LiteralPath $PacPath -PathType Leaf)) {
+            throw "The explicitly selected PAC executable does not exist."
+        }
+        return (Resolve-Path -LiteralPath $PacPath).Path
     }
-
-    $pacCommand = Get-Command pac -ErrorAction SilentlyContinue
+    $pacCommand = Get-Command pac -CommandType Application -ErrorAction SilentlyContinue
     if ($pacCommand) {
         return $pacCommand.Source
     }
@@ -44,6 +46,18 @@ function Resolve-RepoRelativePath {
     return (Join-Path (Split-Path -Parent $PSScriptRoot) $Path)
 }
 
+# Refuse ambient-target deployment before any authentication or native command.
+$target = $null
+if (-not [Uri]::TryCreate($EnvironmentUrl, [UriKind]::Absolute, [ref]$target) -or
+    $target.Scheme -ne 'https' -or $target.UserInfo -or $target.Query -or
+    $target.Fragment -or $target.AbsolutePath -ne '/') {
+    throw 'Supply the exact HTTPS Dataverse environment root with -EnvironmentUrl; active-environment fallback is disabled.'
+}
+$EnvironmentUrl = $target.AbsoluteUri
+if (($UseGithubFederated -and $ClientSecret) -or
+    (($TenantId -or $ApplicationId) -and -not ($UseGithubFederated -or $ClientSecret))) {
+    throw 'Select one explicit application authentication mode, or omit auth parameters to reuse the existing qualified session.'
+}
 $pacCli = Get-PacCliCommand
 $resolvedSolutionPath = Resolve-RepoRelativePath $SolutionPath
 
@@ -66,8 +80,8 @@ if ($EnvironmentUrl) {
 }
 Write-Host ""
 
-if ($EnvironmentUrl) {
-    Write-Host "Preparing PAC auth..." -ForegroundColor Yellow
+if ($UseGithubFederated -or $ClientSecret) {
+    Write-Host "Preparing explicitly selected application auth..." -ForegroundColor Yellow
     $authArgs = @("auth", "create", "--name", "careops-ci", "--environment", $EnvironmentUrl)
     if ($UseGithubFederated) {
         if (-not $TenantId -or -not $ApplicationId) {
@@ -104,9 +118,9 @@ if ($EnvironmentUrl) {
     $whoArgs += @("--environment", $EnvironmentUrl)
 }
 $orgWho = & $pacCli @whoArgs 2>&1
-if ($LASTEXITCODE -ne 0) {
-    Write-Host "✗ Not connected to a Dataverse environment" -ForegroundColor Red
-    Write-Host "  Authenticate with PAC auth before import." -ForegroundColor Gray
+if ($LASTEXITCODE -ne 0 -or -not ($orgWho | Out-String).Trim()) {
+    Write-Host "✗ Exact-target identity/access read failed" -ForegroundColor Red
+    Write-Host "  Preserve the current profile; reconcile its intended account, tenant and qualified VS Code route before import." -ForegroundColor Gray
     exit 1
 }
 Write-Host "✓ Connected to environment" -ForegroundColor Green
@@ -171,7 +185,6 @@ if ($importExitCode -eq 0) {
     Write-Host "  - Check solution dependencies" -ForegroundColor Gray
     Write-Host "  - Verify environment permissions" -ForegroundColor Gray
     Write-Host "  - Review PAC output above for Dataverse validation errors" -ForegroundColor Gray
-    Write-Host "  - Try with --skip-dependency-check for dev environments" -ForegroundColor Gray
     Write-Host ""
     exit 1
 }

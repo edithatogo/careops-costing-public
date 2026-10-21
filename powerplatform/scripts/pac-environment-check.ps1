@@ -1,127 +1,38 @@
-﻿# PAC CLI Environment Check Script
-# Verifies Power Platform CLI installation and environment connectivity
-
+# Read-only access check for one explicit Dataverse target using an existing session.
 param(
     [switch]$Verbose,
-    [string]$EnvironmentName = "Development"
+    [string]$EnvironmentName = 'Development',
+    [string]$EnvironmentUrl = '',
+    [string]$PacPath = ''
 )
 
-Write-Host "========================================" -ForegroundColor Cyan
-Write-Host "PAC CLI Environment Check" -ForegroundColor Cyan
-Write-Host "========================================" -ForegroundColor Cyan
-Write-Host ""
-
-# Check PAC CLI installation
-Write-Host "Checking PAC CLI installation..." -ForegroundColor Yellow
+$ErrorActionPreference = 'Stop'
 try {
-    $pacVersion = pac --version 2>&1
-    if ($LASTEXITCODE -eq 0) {
-        Write-Host "✓ PAC CLI installed: $pacVersion" -ForegroundColor Green
-    } else {
-        Write-Host "✗ PAC CLI not found or error occurred" -ForegroundColor Red
-        Write-Host "  Install with: winget install Microsoft.PowerApps.CLI.Tool" -ForegroundColor Gray
-        exit 1
+    $target = $null
+    if (-not [Uri]::TryCreate($EnvironmentUrl, [UriKind]::Absolute, [ref]$target) -or
+        $target.Scheme -ne 'https' -or $target.UserInfo -or $target.Query -or
+        $target.Fragment -or $target.AbsolutePath -ne '/') {
+        throw 'Supply the exact HTTPS Dataverse environment root with -EnvironmentUrl. No active-environment fallback is used.'
     }
+    if ($PacPath) {
+        if (-not (Test-Path -LiteralPath $PacPath -PathType Leaf)) {
+            throw 'The explicitly selected PAC executable does not exist.'
+        }
+        $pacExecutable = (Resolve-Path -LiteralPath $PacPath).Path
+    } else {
+        $pacExecutable = (Get-Command pac -CommandType Application -ErrorAction Stop).Source
+    }
+    # Do not create/select auth profiles, enumerate tenant environments or retry
+    # a denial. The caller selects its already-qualified executable and session.
+    $result = & $pacExecutable org who --environment $target.AbsoluteUri 2>&1
+    if ($LASTEXITCODE -ne 0 -or -not ($result | Out-String).Trim()) {
+        if ($Verbose) { Write-Host ($result | Out-String) }
+        throw 'The exact-target identity/access read failed or returned no evidence. Preserve the current profile and reconcile its account, tenant and supported VS Code route; no login was attempted.'
+    }
+    if ($Verbose) { Write-Host ($result | Out-String) }
+    Write-Host "Exact-target identity/access read succeeded: $EnvironmentName ($($target.AbsoluteUri))"
+    Write-Host 'Inspect the returned identity against the intended account/tenant before deployment. This check grants no deployment authority and proves no solution membership or runtime behaviour.'
 } catch {
-    Write-Host "✗ PAC CLI not found" -ForegroundColor Red
-    Write-Host "  Install with: winget install Microsoft.PowerApps.CLI.Tool" -ForegroundColor Gray
+    Write-Host "Environment check failed: $($_.Exception.Message)"
     exit 1
 }
-
-Write-Host ""
-
-# Check authentication
-Write-Host "Checking authentication status..." -ForegroundColor Yellow
-try {
-    $authList = pac auth list 2>&1
-    if ($authList -match "No authentication profiles found") {
-        Write-Host "✗ Not authenticated to Power Platform" -ForegroundColor Red
-        Write-Host "  Authenticate with: pac auth create --cloud Public" -ForegroundColor Gray
-        exit 1
-    } else {
-        Write-Host "✓ Authentication profile found" -ForegroundColor Green
-        if ($Verbose) {
-            Write-Host $authList -ForegroundColor Gray
-        }
-    }
-} catch {
-    Write-Host "✗ Error checking authentication" -ForegroundColor Red
-    exit 1
-}
-
-Write-Host ""
-
-# Check environment connection
-Write-Host "Checking Dataverse environment connection..." -ForegroundColor Yellow
-try {
-    $orgWho = pac org who 2>&1
-    if ($LASTEXITCODE -eq 0) {
-        Write-Host "✓ Connected to Dataverse environment" -ForegroundColor Green
-        if ($Verbose) {
-            Write-Host $orgWho -ForegroundColor Gray
-        }
-    } else {
-        Write-Host "⚠ Not connected to a Dataverse environment" -ForegroundColor Yellow
-        Write-Host "  Connect with: pac org select" -ForegroundColor Gray
-    }
-} catch {
-    Write-Host "⚠ Could not verify Dataverse connection" -ForegroundColor Yellow
-}
-
-Write-Host ""
-
-# Check available environments
-Write-Host "Listing available environments..." -ForegroundColor Yellow
-try {
-    $envList = pac admin list --environment 2>&1
-    if ($LASTEXITCODE -eq 0) {
-        Write-Host "✓ Environment list retrieved" -ForegroundColor Green
-        if ($Verbose) {
-            Write-Host $envList -ForegroundColor Gray
-        }
-    }
-} catch {
-    Write-Host "⚠ Could not list environments" -ForegroundColor Yellow
-    Write-Host "  This may require additional permissions" -ForegroundColor Gray
-}
-
-Write-Host ""
-
-# Check solution awareness
-Write-Host "Checking solution capabilities..." -ForegroundColor Yellow
-try {
-    $solutionHelp = pac solution --help 2>&1
-    if ($LASTEXITCODE -eq 0) {
-        Write-Host "✓ Solution commands available" -ForegroundColor Green
-    }
-} catch {
-    Write-Host "⚠ Solution commands may not be available" -ForegroundColor Yellow
-}
-
-Write-Host ""
-
-# Check Canvas apps commands
-Write-Host "Checking Canvas apps capabilities..." -ForegroundColor Yellow
-try {
-    $canvasHelp = pac canvas --help 2>&1
-    if ($LASTEXITCODE -eq 0) {
-        Write-Host "✓ Canvas apps commands available" -ForegroundColor Green
-    }
-} catch {
-    Write-Host "⚠ Canvas apps commands may not be available" -ForegroundColor Yellow
-}
-
-Write-Host ""
-Write-Host "========================================" -ForegroundColor Cyan
-Write-Host "Environment Check Complete" -ForegroundColor Cyan
-Write-Host "========================================" -ForegroundColor Cyan
-Write-Host ""
-
-# Summary
-Write-Host "Summary for environment: $EnvironmentName" -ForegroundColor White
-Write-Host "  PAC CLI: Installed ✓" -ForegroundColor Green
-Write-Host "  Authentication: Configured ✓" -ForegroundColor Green
-Write-Host "  Dataverse: Connected ✓" -ForegroundColor Green
-Write-Host ""
-Write-Host "Ready to proceed with Power Platform development!" -ForegroundColor Green
-Write-Host ""
