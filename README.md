@@ -37,3 +37,19 @@ package, allowing only XML formatting, top-level entity collection order and ZIP
 metadata differences. Entity identities and all nested content/order remain checked.
 The SDK candidate is retained separately; the existing PAC package remains the
 attested release path. Neither build authenticates to or deploys into a tenant.
+
+## Explicit deployment targets and existing sessions
+
+Both `pac-environment-check.ps1` and `pac-solution-deploy.ps1` require
+`-EnvironmentUrl` with the exact HTTPS Dataverse root; a display label does not
+select an environment. Use `-PacPath` for the already-qualified VS Code PAC
+executable. The environment check performs only one explicit-target identity/read
+and fails on a failed or empty response. Inspect that identity against the intended
+account and tenant; a stored profile alone is not access proof.
+
+Deployment reuses the existing session by default and never falls back to a legacy
+NuGet cache or an ambient environment. Existing application authentication is used
+only when its explicit federated or application credential mode is supplied;
+this source support does not authorize new identities, consent or credentials.
+Neither a successful read nor source CI grants deployment authority or proves
+solution membership, runtime results or recovery.
