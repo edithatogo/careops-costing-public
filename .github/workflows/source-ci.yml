@@ -11,9 +11,9 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 jobs:
   security:
-    uses: edithatogo/careops/.github/workflows/reusable-source-security.yml@6319d0c0c76ee672223c156abce9d4181c41aa9a
+    uses: edithatogo/careops/.github/workflows/reusable-source-security.yml@d829db7aa46e3789eb1b339f1ab1ad7e5d780d49
     with:
-      policy-revision: 6319d0c0c76ee672223c156abce9d4181c41aa9a
+      policy-revision: d829db7aa46e3789eb1b339f1ab1ad7e5d780d49
   package:
     name: Offline managed source package
     runs-on: windows-latest
@@ -51,7 +51,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: edithatogo/careops
-          ref: 6319d0c0c76ee672223c156abce9d4181c41aa9a
+          ref: d829db7aa46e3789eb1b339f1ab1ad7e5d780d49
           path: .local/ci-release-policy
           persist-credentials: false
           submodules: false
