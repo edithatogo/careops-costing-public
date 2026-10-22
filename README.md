@@ -53,3 +53,15 @@ only when its explicit federated or application credential mode is supplied;
 this source support does not authorize new identities, consent or credentials.
 Neither a successful read nor source CI grants deployment authority or proves
 solution membership, runtime results or recovery.
+
+## Power BI PPU qualification — 22 October 2026
+
+Apply PPU only to an already-selected costing model/report requirement: qualify model comparison or scoped refresh before changing the workbook/report route. The outstanding federated sign-in and native solution inventory are separate gates; PPU neither renews that session nor grants the target role. Keep costing parity and UI acceptance evidence separate.
+
+Follow the [shared PPU capability and permissions boundary](https://github.com/edithatogo/careops/blob/main/docs/development-and-delivery.md#power-bi-premium-per-user-current-qualification-boundary). The deployment operator's current PPU assignment is verified, but workspace mode, role/Build rights,
+tenant settings, reader licensing and actual feature operation still require
+exact-target evidence. XMLA and Power BI pipelines are qualification candidates;
+Fabric Git/Copilot capacity and Power Automate/Word entitlement remain separate.
+Do not infer support for report Export-to-file REST on PPU alone. Preserve current
+source, native identities and recovery; no automatic workspace conversion,
+settings change, new reporting dependency or cutover follows.
