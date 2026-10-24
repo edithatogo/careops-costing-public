@@ -77,6 +77,9 @@ jobs:
               raise SystemExit('Expected the qualified repository-local helper interpreter.')
           print('Verified repository-local Python', platform.python_version())
           PYCODE
+      - name: Include project licence and notice beside the solution package
+        shell: pwsh
+        run: Copy-Item LICENSE, NOTICE -Destination powerplatform/dist/source-ci
       - name: Read immutable qualified artifact tooling
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -183,11 +186,17 @@ jobs:
           PYCODE
       - name: Compare complete SDK and PAC package contents
         run: python powerplatform/scripts/compare_solution_packages.py .local/pac-candidate/WorkforceCosting-managed.zip powerplatform/solution_bootstrap/bin/Release/bootstrap_solution.zip
+      - name: Include licence and notice with the alternative package
+        shell: pwsh
+        run: Copy-Item LICENSE, NOTICE -Destination powerplatform/solution_bootstrap/bin/Release
       - name: Preserve separately qualified SDK candidate
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: workforce-costing-locked-sdk-candidate
-          path: powerplatform/solution_bootstrap/bin/Release/bootstrap_solution.zip
+          path: |
+            powerplatform/solution_bootstrap/bin/Release/bootstrap_solution.zip
+            powerplatform/solution_bootstrap/bin/Release/LICENSE
+            powerplatform/solution_bootstrap/bin/Release/NOTICE
           if-no-files-found: error
 
   frontend:
@@ -319,6 +328,8 @@ jobs:
               actual = {entry.filename: hashlib.sha256(archive.read(entry)).hexdigest() for entry in entries}
           declared = {entry['fileName'].removeprefix('./'): next(c['checksumValue'] for c in entry['checksums'] if c['algorithm'] == 'SHA256') for entry in document['files']}
           assert actual and len(declared) == len(document['files']) and actual == declared
+          for name in ('LICENSE', 'NOTICE'):
+              assert Path('candidate', name).read_bytes() == Path(name).read_bytes()
           print('Exact downloaded archive and all file digests match the inventory.')
           PYCODE
       - name: Attest build provenance
