@@ -6,6 +6,8 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
+env:
+  COSTING_HELPER_PYTHON: '3.15.1'
 concurrency:
   group: source-ci-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
@@ -43,10 +45,10 @@ jobs:
       - name: Pack existing source without authentication or deployment
         shell: pwsh
         run: ./powerplatform/scripts/pac-solution-package.ps1 -Managed -OutputPath ./powerplatform/dist/source-ci
-      - name: Select the exact inventory runtime
-        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+      - name: Select and verify the repository-local helper runtime
+        uses: $/.github/actions/qualified-python
         with:
-          python-version: '3.15.1'
+          python-version: ${{ env.COSTING_HELPER_PYTHON }}
       - name: Read immutable qualified artifact tooling
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -119,9 +121,10 @@ jobs:
         with:
           name: workforce-costing-source-candidate
           path: .local/pac-candidate
-      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+      - name: Select and verify the repository-local helper runtime
+        uses: $/.github/actions/qualified-python
         with:
-          python-version: '3.15.1'
+          python-version: ${{ env.COSTING_HELPER_PYTHON }}
       - name: Compare complete SDK and PAC package contents
         run: python powerplatform/scripts/compare_solution_packages.py .local/pac-candidate/WorkforceCosting-managed.zip powerplatform/solution_bootstrap/bin/Release/bootstrap_solution.zip
       - name: Preserve separately qualified SDK candidate
@@ -147,9 +150,14 @@ jobs:
         with:
           node-version: '26.12.0'
           package-manager-cache: false
+      - name: Select and verify the repository-local helper runtime
+        if: matrix.app == 'hospital-costing-form'
+        uses: $/.github/actions/qualified-python
+        with:
+          python-version: ${{ env.COSTING_HELPER_PYTHON }}
       - name: Check canary failure receipts
         if: matrix.app == 'hospital-costing-form'
-        run: python3 -m unittest discover -s tests/ci -v
+        run: python -m unittest discover -s tests/ci -v
       - name: Install the committed lock without install scripts
         working-directory: powerplatform/figma-exports/${{ matrix.app }}
         run: npm ci --ignore-scripts --no-fund --no-audit
@@ -176,10 +184,10 @@ jobs:
         with:
           name: workforce-costing-source-candidate
           path: candidate
-      - name: Select the qualified verification runtime
-        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+      - name: Select and verify the repository-local helper runtime
+        uses: $/.github/actions/qualified-python
         with:
-          python-version: '3.15.1'
+          python-version: ${{ env.COSTING_HELPER_PYTHON }}
       - name: Independently compare downloaded package with its inventory
         env:
           SOURCE_COMMIT: ${{ github.sha }}
