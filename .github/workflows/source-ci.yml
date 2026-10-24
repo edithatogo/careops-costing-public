@@ -274,6 +274,10 @@ jobs:
       id-token: write # Federated signing for the exact previously built package.
       attestations: write # Store package provenance and SPDX signatures only.
     steps:
+      - name: Read exact source licence and attribution
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
       - name: Download the package built once by this run
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
         with:
