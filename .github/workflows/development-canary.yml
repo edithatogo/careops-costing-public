@@ -75,8 +75,8 @@ jobs:
           AUDIT_OUTCOME: ${{ steps.audit.outcome }}
           BUILD_OUTCOME: ${{ steps.build.outcome }}
         run: |
-          /usr/bin/python3 - <<'PYCODE'
-          import hashlib, json, os, shutil
+          /usr/bin/python3 -I - <<'PYCODE'
+          import hashlib, json, os, platform, shutil, sys
           from pathlib import Path
           root = Path(os.environ['EVIDENCE_DIR'])
           root.mkdir(parents=True, exist_ok=True)
@@ -93,6 +93,7 @@ jobs:
           else:
               state = 'not-executed'
           receipt = {'sourceCommit': os.environ['SOURCE_COMMIT'], 'state': state, 'stages': stages, 'failedStage': failed, 'buildExecuted': stages['build'] in ['success', 'failure'], 'promoted': False, 'nativeWrites': False, 'qualificationScope': 'UI export dependency audit and bundle build; browser behavior not established', 'files': {}}
+          receipt['receiptInterpreter'] = {'version': platform.python_version(), 'executable': sys.executable, 'scope': 'receipt-only; no build or test execution'}
           for name in ['package.json', 'package-lock.json']:
               path = Path(os.environ['APP_DIR']) / name
               if path.is_file():

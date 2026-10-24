@@ -21,3 +21,23 @@
 ## Current boundary
 
 A track or prompt is not an armed goal or completed runtime migration. Shared chat goal creation was rejected due to its unfinished goal.
+
+## Helper-environment increment
+
+The four Source CI Python job definitions now use the existing qualified setup-uv action
+for repository-local activation and exact interpreter/prefix verification. The
+shared security job retains its independently qualified immutable helper policy.
+The four tracked Python files and active workflow invocations were inventoried;
+no application dependencies or native bindings change.
+
+Local Python 3.15.1 checks exercise fresh creation and refusal of existing files,
+directories, dangling symlinks, wrong versions/prefixes and ambient interpreters.
+Caller-module shadowing is excluded during verification. Existing package parity
+and command-selection regressions pass. Hosted Windows package/comparison and
+Linux attestation executions remain required before merge and main qualification.
+
+Inventory also identified the Node canary's receipt-only OS-Python provider.
+Retain its setup-failure recovery purpose as an explicit scoped exception under
+the user's latest-qualified policy; capture actual version/executable and keep
+application build/runtime qualification separate. Frontend regression execution
+now uses the selected repository-local interpreter as well.

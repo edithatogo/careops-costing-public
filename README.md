@@ -65,3 +65,26 @@ Fabric Git/Copilot capacity and Power Automate/Word entitlement remain separate.
 Do not infer support for report Export-to-file REST on PPU alone. Preserve current
 source, native identities and recovery; no automatic workspace conversion,
 settings change, new reporting dependency or cutover follows.
+
+## Python helpers
+
+Packaging comparison and inventory helpers use the qualified Python 3.15.1 profile.
+For local checks, create `.venv-costing-ci` with
+`uv venv --python 3.15.1 --no-project .venv-costing-ci`, then invoke its
+`bin/python` (`Scripts/python.exe` on Windows) explicitly. For example:
+
+```sh
+.venv-costing-ci/bin/python -m unittest discover -s tests/ci -p test_solution_packages.py -v
+```
+
+Each CI helper job uses pinned setup-uv activation and actual interpreter
+patch/prefix verification.
+Existing environments are refused rather than cleared. Package identity,
+SDK/PAC parity, inventory verification and signature gates remain mandatory;
+these source checks do not deploy a solution or qualify substantive costing data.
+
+The Node canary retains an absolute OS-Python receipt formatter so setup failures
+remain reportable. This scoped compatibility exception records its actual
+interpreter and performs no application build or test execution. Build-stage and
+runtime evidence remain separate; an outcome receipt cannot establish runtime
+qualification.
