@@ -88,3 +88,11 @@ remain reportable. This scoped compatibility exception records its actual
 interpreter and performs no application build or test execution. Build-stage and
 runtime evidence remain separate; an outcome receipt cannot establish runtime
 qualification.
+
+## Licence
+
+Project-owned code is licensed under [Apache-2.0](LICENSE); retain [NOTICE](NOTICE)
+with source distributions. Third-party software and external source materials
+retain their own licences and attribution. This does not grant redistribution
+rights to the private workbooks, documents, data or operational history excluded
+from this public source.

@@ -50,3 +50,11 @@ Existing runner example (select the actual changed case, not this example blindl
 ```sh
 "$REPO_PYTHON" -m unittest discover -s tests/ci -p test_solution_packages.py -v
 ```
+
+## Project-owned code licence
+
+Use Apache-2.0 for project-owned code and align maintained package metadata and
+source-distribution licence/notice files. Preserve third-party licences, notices,
+attribution and source-material rights; do not rewrite historical evidence or
+private histories. Licence standardisation does not authorise publication, native
+changes or email delivery.
