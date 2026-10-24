@@ -77,8 +77,8 @@ For local checks, create `.venv-costing-ci` with
 .venv-costing-ci/bin/python -m unittest discover -s tests/ci -p test_solution_packages.py -v
 ```
 
-Each CI helper job uses one local composite action wrapping pinned setup-uv
-activation and actual interpreter patch/prefix verification.
+Each CI helper job uses pinned setup-uv activation and actual interpreter
+patch/prefix verification.
 Existing environments are refused rather than cleared. Package identity,
 SDK/PAC parity, inventory verification and signature gates remain mandatory;
 these source checks do not deploy a solution or qualify substantive costing data.

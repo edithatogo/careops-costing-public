@@ -45,10 +45,38 @@ jobs:
       - name: Pack existing source without authentication or deployment
         shell: pwsh
         run: ./powerplatform/scripts/pac-solution-package.ps1 -Managed -OutputPath ./powerplatform/dist/source-ci
-      - name: Select and verify the repository-local helper runtime
-        uses: $/.github/actions/qualified-python
+      - name: Refuse an existing helper environment
+        shell: pwsh
+        run: |
+          $costingEnvironment = Join-Path $env:GITHUB_WORKSPACE '.venv-costing-ci'
+          try { $costingExisting = Get-Item -LiteralPath $costingEnvironment -Force -ErrorAction Stop }
+          catch [System.Management.Automation.ItemNotFoundException] { $costingExisting = $null }
+          if ($null -ne $costingExisting) { throw 'Refusing a pre-existing helper environment.' }
+          exit 0
+      - name: Activate the qualified repository-local helper environment
+        id: helper_runtime
+        uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
         with:
+          version: '0.13.5'
           python-version: ${{ env.COSTING_HELPER_PYTHON }}
+          activate-environment: true
+          venv-path: .venv-costing-ci
+          no-project: true
+          enable-cache: false
+      - name: Verify the actual helper runtime and prefix
+        shell: bash
+        env:
+          EXPECTED_PYTHON: ${{ env.COSTING_HELPER_PYTHON }}
+          QUALIFIED_VENV: ${{ steps.helper_runtime.outputs.venv }}
+        run: |
+          python -I - <<'PYCODE'
+          import os, pathlib, platform, sys
+          expected = pathlib.Path(os.environ['GITHUB_WORKSPACE']) / '.venv-costing-ci'
+          selected = pathlib.Path(os.environ['QUALIFIED_VENV'])
+          if platform.python_version() != os.environ['EXPECTED_PYTHON'] or selected.resolve() != expected.resolve() or pathlib.Path(sys.prefix).resolve() != expected.resolve() or sys.prefix == sys.base_prefix:
+              raise SystemExit('Expected the qualified repository-local helper interpreter.')
+          print('Verified repository-local Python', platform.python_version())
+          PYCODE
       - name: Read immutable qualified artifact tooling
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -121,10 +149,38 @@ jobs:
         with:
           name: workforce-costing-source-candidate
           path: .local/pac-candidate
-      - name: Select and verify the repository-local helper runtime
-        uses: $/.github/actions/qualified-python
+      - name: Refuse an existing helper environment
+        shell: pwsh
+        run: |
+          $costingEnvironment = Join-Path $env:GITHUB_WORKSPACE '.venv-costing-ci'
+          try { $costingExisting = Get-Item -LiteralPath $costingEnvironment -Force -ErrorAction Stop }
+          catch [System.Management.Automation.ItemNotFoundException] { $costingExisting = $null }
+          if ($null -ne $costingExisting) { throw 'Refusing a pre-existing helper environment.' }
+          exit 0
+      - name: Activate the qualified repository-local helper environment
+        id: helper_runtime
+        uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
         with:
+          version: '0.13.5'
           python-version: ${{ env.COSTING_HELPER_PYTHON }}
+          activate-environment: true
+          venv-path: .venv-costing-ci
+          no-project: true
+          enable-cache: false
+      - name: Verify the actual helper runtime and prefix
+        shell: bash
+        env:
+          EXPECTED_PYTHON: ${{ env.COSTING_HELPER_PYTHON }}
+          QUALIFIED_VENV: ${{ steps.helper_runtime.outputs.venv }}
+        run: |
+          python -I - <<'PYCODE'
+          import os, pathlib, platform, sys
+          expected = pathlib.Path(os.environ['GITHUB_WORKSPACE']) / '.venv-costing-ci'
+          selected = pathlib.Path(os.environ['QUALIFIED_VENV'])
+          if platform.python_version() != os.environ['EXPECTED_PYTHON'] or selected.resolve() != expected.resolve() or pathlib.Path(sys.prefix).resolve() != expected.resolve() or sys.prefix == sys.base_prefix:
+              raise SystemExit('Expected the qualified repository-local helper interpreter.')
+          print('Verified repository-local Python', platform.python_version())
+          PYCODE
       - name: Compare complete SDK and PAC package contents
         run: python powerplatform/scripts/compare_solution_packages.py .local/pac-candidate/WorkforceCosting-managed.zip powerplatform/solution_bootstrap/bin/Release/bootstrap_solution.zip
       - name: Preserve separately qualified SDK candidate
@@ -150,11 +206,41 @@ jobs:
         with:
           node-version: '26.12.0'
           package-manager-cache: false
-      - name: Select and verify the repository-local helper runtime
+      - name: Refuse an existing helper environment
         if: matrix.app == 'hospital-costing-form'
-        uses: $/.github/actions/qualified-python
+        shell: pwsh
+        run: |
+          $costingEnvironment = Join-Path $env:GITHUB_WORKSPACE '.venv-costing-ci'
+          try { $costingExisting = Get-Item -LiteralPath $costingEnvironment -Force -ErrorAction Stop }
+          catch [System.Management.Automation.ItemNotFoundException] { $costingExisting = $null }
+          if ($null -ne $costingExisting) { throw 'Refusing a pre-existing helper environment.' }
+          exit 0
+      - name: Activate the qualified repository-local helper environment
+        if: matrix.app == 'hospital-costing-form'
+        id: helper_runtime
+        uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
         with:
+          version: '0.13.5'
           python-version: ${{ env.COSTING_HELPER_PYTHON }}
+          activate-environment: true
+          venv-path: .venv-costing-ci
+          no-project: true
+          enable-cache: false
+      - name: Verify the actual helper runtime and prefix
+        if: matrix.app == 'hospital-costing-form'
+        shell: bash
+        env:
+          EXPECTED_PYTHON: ${{ env.COSTING_HELPER_PYTHON }}
+          QUALIFIED_VENV: ${{ steps.helper_runtime.outputs.venv }}
+        run: |
+          python -I - <<'PYCODE'
+          import os, pathlib, platform, sys
+          expected = pathlib.Path(os.environ['GITHUB_WORKSPACE']) / '.venv-costing-ci'
+          selected = pathlib.Path(os.environ['QUALIFIED_VENV'])
+          if platform.python_version() != os.environ['EXPECTED_PYTHON'] or selected.resolve() != expected.resolve() or pathlib.Path(sys.prefix).resolve() != expected.resolve() or sys.prefix == sys.base_prefix:
+              raise SystemExit('Expected the qualified repository-local helper interpreter.')
+          print('Verified repository-local Python', platform.python_version())
+          PYCODE
       - name: Check canary failure receipts
         if: matrix.app == 'hospital-costing-form'
         run: python -m unittest discover -s tests/ci -v
@@ -184,10 +270,38 @@ jobs:
         with:
           name: workforce-costing-source-candidate
           path: candidate
-      - name: Select and verify the repository-local helper runtime
-        uses: $/.github/actions/qualified-python
+      - name: Refuse an existing helper environment
+        shell: pwsh
+        run: |
+          $costingEnvironment = Join-Path $env:GITHUB_WORKSPACE '.venv-costing-ci'
+          try { $costingExisting = Get-Item -LiteralPath $costingEnvironment -Force -ErrorAction Stop }
+          catch [System.Management.Automation.ItemNotFoundException] { $costingExisting = $null }
+          if ($null -ne $costingExisting) { throw 'Refusing a pre-existing helper environment.' }
+          exit 0
+      - name: Activate the qualified repository-local helper environment
+        id: helper_runtime
+        uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
         with:
+          version: '0.13.5'
           python-version: ${{ env.COSTING_HELPER_PYTHON }}
+          activate-environment: true
+          venv-path: .venv-costing-ci
+          no-project: true
+          enable-cache: false
+      - name: Verify the actual helper runtime and prefix
+        shell: bash
+        env:
+          EXPECTED_PYTHON: ${{ env.COSTING_HELPER_PYTHON }}
+          QUALIFIED_VENV: ${{ steps.helper_runtime.outputs.venv }}
+        run: |
+          python -I - <<'PYCODE'
+          import os, pathlib, platform, sys
+          expected = pathlib.Path(os.environ['GITHUB_WORKSPACE']) / '.venv-costing-ci'
+          selected = pathlib.Path(os.environ['QUALIFIED_VENV'])
+          if platform.python_version() != os.environ['EXPECTED_PYTHON'] or selected.resolve() != expected.resolve() or pathlib.Path(sys.prefix).resolve() != expected.resolve() or sys.prefix == sys.base_prefix:
+              raise SystemExit('Expected the qualified repository-local helper interpreter.')
+          print('Verified repository-local Python', platform.python_version())
+          PYCODE
       - name: Independently compare downloaded package with its inventory
         env:
           SOURCE_COMMIT: ${{ github.sha }}
