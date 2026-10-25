@@ -9,6 +9,12 @@ Run the existing PowerShell packaging command tests and source CI before using
 an artifact. Native deployment and substantive costing parity remain separate.
 The bootstrap and UI source are development candidates, not operational approval.
 
+The [`powerplatform/costing-core`](powerplatform/costing-core/README.md) package
+provides an independent fictional activity-cost calculation and optional
+aggregate-provider contract. It contains no Figma UI source, private workbook
+material or native binding; its calculation checks run in the existing Node
+26.12.0 source-CI lane.
+
 
 ## Modular source delivery and ALM
 
